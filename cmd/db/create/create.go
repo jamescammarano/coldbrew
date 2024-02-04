@@ -1,7 +1,9 @@
 package create
 
 import (
+	"cmd/cb/cmd/db/migrate"
 	"database/sql"
+	"fmt"
 	"os"
 
 	_ "github.com/mattn/go-sqlite3"
@@ -21,33 +23,34 @@ var Cmd = &cobra.Command{
 	Short: "create database",
 	Long:  `create database`,
 	Run: func(cmd *cobra.Command, args []string) {
-		os.MkdirAll("./InstallDir/", 0755)
-		os.Create("./InstallDir/data.db")
-
-		db, err := sql.Open("sqlite3", "./InstallDir/data.db")
-		errHandler(err, db)
-
-		_, err = db.Exec("CREATE TABLE `GlobalVariables` (`attribute` VARCHAR(64) NOT NULL UNIQUE, `data` VARCHAR(255) NOT NULL)")
-		errHandler(err, db)
-
-		err = seedDb(db)
-		errHandler(err, db)
-
-		db.Close()
+		create("./InstallDir", "data.db")
+		migrate.Run("./InstallDir/data.db")
+		seed("./InstallDir/data.db", "./config.yml")
 	},
 }
 
-func seedDb(db *sql.DB) error {
+func create(path string, name string) {
+	os.MkdirAll(path, 0755)
+	dbPath := fmt.Sprintf("%v/%v", path, name)
+
+	os.Create(dbPath)
+
+	db, err := sql.Open("sqlite3", dbPath)
+	errHandler(err, db)
+	db.Close()
+}
+
+func seed(path string, config string) error {
 	var globalConfig GlobalConfig
 	insertQuery := "INSERT INTO `GlobalVariables` (attribute, data) VALUES ($1, $2)"
 
-	b, err := os.ReadFile("./config.yml")
+	db, err := sql.Open("sqlite3", path)
 
 	if err != nil {
 		return err
 	}
 
-	err = yaml.Unmarshal(b, &globalConfig)
+	err = yaml.Unmarshal([]byte(config), &globalConfig)
 
 	if err != nil {
 		return err
