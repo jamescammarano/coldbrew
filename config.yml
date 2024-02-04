@@ -1,0 +1,3 @@
+InstallDir: "./test/InstallDir"
+MediaDir: "./test/MediaDir"
+DownloadDir: "./test/DownloadDir"
