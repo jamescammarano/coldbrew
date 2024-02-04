@@ -21,7 +21,8 @@ type GlobalConfig struct {
 var Cmd = &cobra.Command{
 	Use:   "create",
 	Short: "create database",
-	Long:  `create database`,
+	Long: `Initializes the database with all the current migrations. 
+	Should only need to be run on installation or if the DB is corrupted.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		db, err := create("./InstallDir", "data.db")
 
