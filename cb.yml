@@ -1,4 +1,6 @@
 download_dir: ""
-media_dir: ""
-install_dir: ""
-domain: ""
+media_dir: "mdir"
+install_dir: "./InstallDir"
+domain: "domain"
+kavita_token: "asd"
+kavita_port: 5000
