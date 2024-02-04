@@ -23,34 +23,45 @@ var Cmd = &cobra.Command{
 	Short: "create database",
 	Long:  `create database`,
 	Run: func(cmd *cobra.Command, args []string) {
-		create("./InstallDir", "data.db")
-		migrate.Run("./InstallDir/data.db")
-		seed("./InstallDir/data.db", "./config.yml")
+		db, err := create("./InstallDir", "data.db")
+
+		if err != nil {
+			logrus.Error(err.Error())
+			db.Close()
+			os.Exit(1)
+		}
+
+		err = migrate.Run(db)
+		if err != nil {
+			logrus.Error(err.Error())
+			db.Close()
+			os.Exit(1)
+		}
+
+		err = seed(db, "./config.yml")
+		if err != nil {
+			logrus.Error(err.Error())
+		}
+		db.Close()
+
 	},
 }
 
-func create(path string, name string) {
+func create(path string, name string) (*sql.DB, error) {
 	os.MkdirAll(path, 0755)
 	dbPath := fmt.Sprintf("%v/%v", path, name)
 
 	os.Create(dbPath)
 
 	db, err := sql.Open("sqlite3", dbPath)
-	errHandler(err, db)
-	db.Close()
+	return db, err
 }
 
-func seed(path string, config string) error {
+func seed(db *sql.DB, config string) error {
 	var globalConfig GlobalConfig
 	insertQuery := "INSERT INTO `GlobalVariables` (attribute, data) VALUES ($1, $2)"
 
-	db, err := sql.Open("sqlite3", path)
-
-	if err != nil {
-		return err
-	}
-
-	err = yaml.Unmarshal([]byte(config), &globalConfig)
+	err := yaml.Unmarshal([]byte(config), &globalConfig)
 
 	if err != nil {
 		return err
@@ -61,20 +72,12 @@ func seed(path string, config string) error {
 		return err
 	}
 
-	_, err = db.Query(insertQuery, "MediaDir", globalConfig.MediaDir)
+	_, err = db.Exec(insertQuery, "MediaDir", globalConfig.MediaDir)
 	if err != nil {
 		return err
 	}
 
-	_, err = db.Query(insertQuery, "InstallDir", globalConfig.InstallDir)
+	_, err = db.Exec(insertQuery, "InstallDir", globalConfig.InstallDir)
 
 	return err
-}
-
-func errHandler(err error, db *sql.DB) {
-	if err != nil {
-		logrus.Error(err.Error())
-		db.Close()
-		os.Exit(1)
-	}
 }
