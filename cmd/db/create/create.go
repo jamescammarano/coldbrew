@@ -1,7 +1,6 @@
 package create
 
 import (
-	"cmd/cb/cmd/db/migrate"
 	"database/sql"
 	"fmt"
 	"os"
@@ -24,7 +23,11 @@ var Cmd = &cobra.Command{
 	Long: `Initializes the database with all the current migrations. 
 	Should only need to be run on installation or if the DB is corrupted.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		db, err := create("./InstallDir", "data.db")
+		os.MkdirAll("./InstallDir", 0755)
+
+		os.Create("./InstallDir/data.db")
+
+		db, err := sql.Open("sqlite3", "./InstallDir/data.db")
 
 		if err != nil {
 			logrus.Error(err.Error())
@@ -32,14 +35,15 @@ var Cmd = &cobra.Command{
 			os.Exit(1)
 		}
 
-		err = migrate.Run(db)
+		err = createTable(db, "Global")
+
 		if err != nil {
 			logrus.Error(err.Error())
 			db.Close()
 			os.Exit(1)
 		}
 
-		err = seed(db, "./config.yml")
+		err = seed(db, "./config.yml", "Global")
 		if err != nil {
 			logrus.Error(err.Error())
 		}
@@ -48,37 +52,41 @@ var Cmd = &cobra.Command{
 	},
 }
 
-func create(path string, name string) (*sql.DB, error) {
-	os.MkdirAll(path, 0755)
-	dbPath := fmt.Sprintf("%v/%v", path, name)
+func createTable(db *sql.DB, roast string) error {
+	logrus.Info("Creating Table: ", roast)
 
-	os.Create(dbPath)
-
-	db, err := sql.Open("sqlite3", dbPath)
-	return db, err
+	statement := fmt.Sprintf("CREATE TABLE `%v` (`attr` VARCHAR(64) NOT NULL UNIQUE, `data` VARCHAR(255) NOT NULL)", roast)
+	_, err := db.Exec(statement)
+	if err != nil {
+		logrus.Error("here lies the error!", err.Error())
+		// r20240204(db)
+	}
+	return err
 }
 
-func seed(db *sql.DB, config string) error {
-	var globalConfig GlobalConfig
-	insertQuery := "INSERT INTO `GlobalVariables` (attribute, data) VALUES ($1, $2)"
+func seed(db *sql.DB, config string, roast string) error {
+	var variables map[string]string
+	insertQuery := fmt.Sprintf("INSERT INTO %v (attr, data) VALUES ($2, $3)", roast)
 
-	err := yaml.Unmarshal([]byte(config), &globalConfig)
+	res, err := os.ReadFile(config)
 
 	if err != nil {
 		return err
 	}
 
-	_, err = db.Exec(insertQuery, "DownloadDir", globalConfig.DownloadDir)
+	err = yaml.Unmarshal(res, &variables)
+
 	if err != nil {
 		return err
 	}
 
-	_, err = db.Exec(insertQuery, "MediaDir", globalConfig.MediaDir)
-	if err != nil {
-		return err
-	}
+	for attr, data := range variables {
+		_, err = db.Exec(insertQuery, attr, data)
 
-	_, err = db.Exec(insertQuery, "InstallDir", globalConfig.InstallDir)
+		if err != nil {
+			return err
+		}
+	}
 
 	return err
 }
