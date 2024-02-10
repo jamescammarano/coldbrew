@@ -3,7 +3,6 @@ package create
 import (
 	"database/sql"
 	"fmt"
-	"main/coldbrew/cmd/db/migrate"
 	"os"
 
 	_ "github.com/mattn/go-sqlite3"

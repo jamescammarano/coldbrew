@@ -16,7 +16,6 @@ require (
 require (
 	github.com/cbroglie/mustache v1.4.0
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
-	github.com/manifoldco/promptui v0.9.0
 	github.com/mattn/go-sqlite3 v1.14.22
 	github.com/sirupsen/logrus v1.9.3
 	github.com/spaceweasel/promptui v0.8.1
