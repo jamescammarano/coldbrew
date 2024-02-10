@@ -57,10 +57,7 @@ func createTable(db *sql.DB, roast string) error {
 
 	statement := fmt.Sprintf("CREATE TABLE `%v` (`attr` VARCHAR(64) NOT NULL UNIQUE, `data` VARCHAR(255) NOT NULL)", roast)
 	_, err := db.Exec(statement)
-	if err != nil {
-		logrus.Error("here lies the error!", err.Error())
-		// r20240204(db)
-	}
+
 	return err
 }
 
