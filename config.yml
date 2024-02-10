@@ -1,3 +1,4 @@
-InstallDir: "./InstallDir/InstallDir"
-MediaDir: "./InstallDir/MediaDir"
-DownloadDir: "./InstallDir/DownloadDir"
+vars:
+  - InstallDir: "./InstallDir/InstallDir"
+  - MediaDir: "./InstallDir/MediaDir"
+  - DownloadDir: "./InstallDir/DownloadDir"
