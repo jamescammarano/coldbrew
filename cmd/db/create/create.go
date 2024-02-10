@@ -11,10 +11,8 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-type GlobalConfig struct {
-	InstallDir  string `yaml:"InstallDir"`
-	MediaDir    string `yaml:"MediaDir"`
-	DownloadDir string `yaml:"DownloadDir"`
+type Config struct {
+	Variables []map[string]string `yaml:"vars"`
 }
 
 var Cmd = &cobra.Command{
@@ -23,6 +21,8 @@ var Cmd = &cobra.Command{
 	Long: `Initializes the database with all the current migrations. 
 	Should only need to be run on installation or if the DB is corrupted.`,
 	Run: func(cmd *cobra.Command, args []string) {
+		var config Config
+
 		os.MkdirAll("./InstallDir", 0755)
 
 		os.Create("./InstallDir/data.db")
@@ -31,23 +31,33 @@ var Cmd = &cobra.Command{
 
 		if err != nil {
 			logrus.Error(err.Error())
-			db.Close()
 			os.Exit(1)
 		}
+		defer db.Close()
 
 		err = createTable(db, "Global")
 
 		if err != nil {
 			logrus.Error(err.Error())
-			db.Close()
 			os.Exit(1)
 		}
 
-		err = seed(db, "./config.yml", "Global")
+		res, err := os.ReadFile("./config.yml")
+
 		if err != nil {
 			logrus.Error(err.Error())
 		}
-		db.Close()
+
+		err = yaml.Unmarshal(res, &config)
+
+		if err != nil {
+			logrus.Error(err.Error())
+		}
+
+		err = seed(db, mergeMaps(config.Variables), "Global")
+		if err != nil {
+			logrus.Error(err.Error())
+		}
 
 	},
 }
@@ -61,29 +71,28 @@ func createTable(db *sql.DB, roast string) error {
 	return err
 }
 
-func seed(db *sql.DB, config string, roast string) error {
-	var variables map[string]string
+func seed(db *sql.DB, vars map[string]string, roast string) error {
 	insertQuery := fmt.Sprintf("INSERT INTO %v (attr, data) VALUES ($2, $3)", roast)
 
-	res, err := os.ReadFile(config)
-
-	if err != nil {
-		return err
-	}
-
-	err = yaml.Unmarshal(res, &variables)
-
-	if err != nil {
-		return err
-	}
-
-	for attr, data := range variables {
-		_, err = db.Exec(insertQuery, attr, data)
+	for attr, data := range vars {
+		_, err := db.Exec(insertQuery, attr, data)
 
 		if err != nil {
 			return err
 		}
 	}
 
-	return err
+	return nil
+}
+
+func mergeMaps(mapArr []map[string]string) map[string]string {
+	merged := map[string]string{}
+
+	for _, t := range mapArr {
+		for k, v := range t {
+			merged[k] = v
+		}
+	}
+
+	return merged
 }

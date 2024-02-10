@@ -17,7 +17,7 @@ func beforeEach() (*sql.DB, error) {
 }
 
 func afterEach() {
-	os.Remove("./test")
+	os.RemoveAll("./test")
 }
 
 func TestCreateTable(t *testing.T) {
@@ -40,6 +40,29 @@ func TestCreateTable(t *testing.T) {
 
 	if err != nil {
 		fmt.Printf("expected error: %s", err)
+	}
+
+	afterEach()
+}
+
+func TestSeed(t *testing.T) {
+	db, err := beforeEach()
+
+	variables := map[string]string{"test": "done", "test2": "doneagain"}
+
+	if err != nil {
+		fmt.Printf("unexpected error: %s", err)
+	}
+
+	defer db.Close()
+
+	createTable(db, "test")
+
+	err = seed(db, variables, "test")
+
+	if err != nil {
+		fmt.Printf("unexpected error: %s", err)
+		t.Errorf("error while creating table `test`: %s", err)
 	}
 
 	afterEach()
