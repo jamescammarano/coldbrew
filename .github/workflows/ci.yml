@@ -77,7 +77,7 @@ jobs:
           category: "/language:${{matrix.language}}"
 
       - name: Run coverage
-        run: go test -race -coverprofile=coverage.txt -covermode=atomic
+        run: go test ./... -race -coverprofile=coverage.txt -covermode=atomic
 
       - name: Upload to Codecov
         uses: codecov/codecov-action@v4.0.1
