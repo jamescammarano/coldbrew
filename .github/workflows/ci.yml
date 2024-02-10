@@ -12,6 +12,8 @@
 name: "CodeQL"
 
 on:
+  push:
+    branches: ["main"]
   pull_request:
     branches: ["main"]
   schedule:
@@ -82,6 +84,7 @@ jobs:
 
       - name: Run coverage
         run: go test -race -coverprofile=coverage.txt -covermode=atomic
+
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4-beta
         env:
