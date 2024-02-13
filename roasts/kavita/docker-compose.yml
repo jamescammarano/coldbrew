@@ -1,0 +1,25 @@
+---
+version: "3"
+services:
+  kavita:
+    image: "kizaing/kavita:{{ Tag }}"
+    container_name: kavita
+    volumes:
+      - "{{ MediaDir }}/manga:/manga"
+      - "{{ MediaDir }}/comics:/comics"
+      - "{{ MediaDir }}/books:/books"
+      - "{{ InstallDir }}/kavita:/kavita/config"
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=traefik_public
+      - "traefik.http.routers.kavita.rule=Host(`kavita.{{ Domain }}`)"
+      - "traefik.http.routers.kavita.entrypoints=https"
+      - "traefik.http.routers.kavita.middlewares=middlewares-authelia@file"
+      - "traefik.http.services.kavita.loadbalancer.server.port={{ Port }}"
+    restart: "{{ Restart }}"
+    networks:
+      - traefik_public
+
+networks:
+  traefik_public:
+    external: true

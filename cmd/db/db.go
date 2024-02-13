@@ -4,7 +4,7 @@ Copyright © 2024 NAME HERE <EMAIL ADDRESS>
 package db
 
 import (
-	"cmd/cb/cmd/db/create"
+	"main/coldbrew/cmd/db/create"
 
 	"github.com/spf13/cobra"
 )

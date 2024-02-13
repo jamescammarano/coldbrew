@@ -11,11 +11,7 @@
 #
 name: "CodeQL"
 
-on:
-  pull_request:
-    branches: ["main"]
-  schedule:
-    - cron: "28 12 * * 2"
+on: ["push", "pull_request"]
 
 jobs:
   analyze:
@@ -81,8 +77,11 @@ jobs:
           category: "/language:${{matrix.language}}"
 
       - name: Run coverage
-        run: go test -race -coverprofile=coverage.txt -covermode=atomic
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v4-beta
+        run: go test ./... -race -coverprofile=coverage.txt -covermode=atomic
+
+      - name: Upload to Codecov
+        uses: codecov/codecov-action@v4.0.1
         env:
+          fail_ci_if_error: true
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+          verbose: true

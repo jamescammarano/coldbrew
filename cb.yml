@@ -1,4 +1,6 @@
 vars:
-  - InstallDir: "./InstallDir/InstallDir"
+  - InstallDir: "./InstallDir/roasts"
   - MediaDir: "./InstallDir/MediaDir"
   - DownloadDir: "./InstallDir/DownloadDir"
+  - Domain: "domain"
+  - DbName: "data.db"
