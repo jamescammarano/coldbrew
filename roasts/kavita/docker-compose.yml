@@ -5,10 +5,10 @@ services:
     image: "kizaing/kavita:{{ Tag }}"
     container_name: kavita
     volumes:
-      - "{{ MediaDir }}manga:/manga"
-      - "{{ MediaDir }}comics:/comics"
-      - "{{ MediaDir }}books:/books"
-      - "{{ InstallDir }}kavita/base:/kavita/config"
+      - "{{ MediaDir }}/manga:/manga"
+      - "{{ MediaDir }}/comics:/comics"
+      - "{{ MediaDir }}/books:/books"
+      - "{{ InstallDir }}/kavita:/kavita/config"
     labels:
       - traefik.enable=true
       - traefik.docker.network=traefik_public

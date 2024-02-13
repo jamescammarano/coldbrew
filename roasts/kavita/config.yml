@@ -1,0 +1,22 @@
+tags:
+  - latest
+  - nightly
+vars:
+  - TokenKey: func(base64)
+  - Port: 5000
+dirs: 
+  - name: books
+    dest: "{{ MediaDir }}"
+  - name: comics
+    dest: "{{ MediaDir }}"
+  - name: manga
+    dest: "{{ MediaDir }}"
+files:
+  - name: appsettings.json
+    src: "./roasts/kavita/files"
+    dest: "{{ InstallDir }}/kavita/config"
+  - name: docker-compose.yml
+    src: "./roasts/kavita"
+    dest: "{{ InstallDir }}/kavita"
+addons:
+  - roast: kavita_email

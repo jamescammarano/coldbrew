@@ -1,6 +1,6 @@
-download_dir: ""
-media_dir: "mdir"
-install_dir: "./InstallDir"
-domain: "domain"
-kavita_token: "asd"
-kavita_port: 5000
+vars:
+  - InstallDir: "./InstallDir/roasts"
+  - MediaDir: "./InstallDir/MediaDir"
+  - DownloadDir: "./InstallDir/DownloadDir"
+  - Domain: "domain"
+  - DbName: "data.db"
