@@ -18,5 +18,3 @@ files:
   - name: docker-compose.yml
     src: "./roasts/kavita"
     dest: "{{ InstallDir }}/kavita"
-addons:
-  - roast: kavita_email

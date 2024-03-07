@@ -1,6 +1,8 @@
 package install
 
-import "testing"
+import (
+	"testing"
+)
 
 func TestGenerateVariables(t *testing.T) {
 	test := map[string]string{"base64": "func(base64)", "nofunction": "6446"}
