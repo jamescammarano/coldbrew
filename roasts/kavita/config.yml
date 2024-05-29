@@ -2,8 +2,7 @@ tags:
   - latest
   - nightly
 vars:
-  - TokenKey: func(base64)
-  - Port: 5000
+  - Port: "5000"
 dirs: 
   - name: books
     dest: "{{ MediaDir }}"

@@ -1,17 +1,10 @@
 package utils
 
 import (
-	"encoding/base64"
 	"errors"
-	"fmt"
-	"time"
 
 	"github.com/spaceweasel/promptui"
 )
-
-func Base64() string {
-	return base64.StdEncoding.EncodeToString([]byte(fmt.Sprint(time.Now().UTC().Nanosecond())))
-}
 
 func MergeMaps(mapArr []map[string]string) map[string]string {
 	merged := map[string]string{}

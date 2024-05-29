@@ -1,8 +1,9 @@
 tags:
   - "2.10"
 vars:
-  - cf_api_key: func(PromptInput)
-  - cf_email: func(PromptInput)
+  - cf_api_key: __func(PromptInput)
+  - cf_email: __func(PromptInput)
+
 files:
   - name: docker-compose.yml
     src: "./roasts/traefik"

@@ -82,6 +82,10 @@ func installer(roast string) {
 
 	variables := generateVariables(utils.MergeMaps(config.Variables))
 
+	if variables["Restart"] == "" {
+		variables["Restart"] = "unless-stopped"
+	}
+
 	err = create.Seed(db, variables, roast)
 
 	if err != nil {
@@ -159,11 +163,7 @@ func setTag(tags []string) (string, error) {
 
 	_, tag, err := tagSelect.Run()
 
-	if err != nil {
-		return tag, err
-	}
-
-	return tag, nil
+	return tag, err
 }
 
 func readRows(rows *sql.Rows) (map[string]string, error) {
@@ -206,7 +206,6 @@ func createDirs(dirs []Directory, variables map[string]string) []error {
 }
 
 func fileManager(files []File, variables map[string]string, roast string) {
-
 	_, err := os.Stat(fmt.Sprintf("%s/%s/config.sh", variables["InstallDir"], roast))
 
 	if err != nil {
@@ -272,15 +271,12 @@ func fileManager(files []File, variables map[string]string, roast string) {
 func generateVariables(variables map[string]string) map[string]string {
 	generated := map[string]string{}
 
-	for attr, data := range variables {
-		if data == "func(base64)" {
-			generated[attr] = utils.Base64()
-		} else if data == "func(PromptInput)" {
+	for attr, val := range variables {
+		if val == "__func(PromptInput)" {
 			generated[attr] = utils.PromptInput(attr)
 		} else {
-			generated[attr] = data
+			generated[attr] = val
 		}
 	}
-
 	return generated
 }
