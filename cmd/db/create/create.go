@@ -50,7 +50,7 @@ var Cmd = &cobra.Command{
 			os.Exit(1)
 		}
 
-		res, err := os.ReadFile("./cb.yml")
+		res, err := os.ReadFile("./cb.example.yml")
 
 		if err != nil {
 			logrus.Error(err.Error())

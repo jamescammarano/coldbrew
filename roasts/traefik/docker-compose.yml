@@ -1,0 +1,49 @@
+---
+version: "3"
+
+secrets:
+  cf_email:
+    file: "secrets/cf_email"
+  cf_api_key:
+    file: "secrets/cf_api_key" # Global API Key not Origin CA Key
+
+services:
+  reverse-proxy:
+    image: traefik:v2.10
+    ports:
+      - target: 80
+        published: 80
+        protocol: tcp
+        mode: host
+      - target: 443
+        published: 443
+        protocol: tcp
+        mode: host
+    environment:
+      - TZ=America/New_York
+      - CF_API_EMAIL_FILE=/run/secrets/cf_email
+      - CF_API_KEY_FILE=/run/secrets/cf_api_key
+    secrets:
+      - cf_email
+      - cf_api_key
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - "{{ InstallDir }}/traefik/letsencrypt/acme.json:/letsencrypt/acme.json"
+      - "{{ InstallDir }}/traefik/rules:/rules"
+      - "{{ InstallDir }}/traefik/traefik.yml:/etc/traefik/traefik.yml"
+
+    labels:
+      # Crucial! This tells Traefik to actually pay attention to this container
+      - "traefik.enable=true"
+      - "traefik.http.routers.traefik-dashboard.entrypoints=https"
+      - traefik.http.routers.traefik-dashboard.tls=true
+      - traefik.http.routers.traefik-dashboard.tls.certresolver=main
+      - "traefik.http.routers.traefik-dashboard.rule=Host(`traefik.{{ Domain }}`)"
+      - "traefik.http.routers.traefik-dashboard.service=api@internal"
+    networks:
+      - traefik_public
+    restart: "{{ Restart }}"
+
+networks:
+  traefik_public:
+    external: true

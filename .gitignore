@@ -2,3 +2,4 @@ InstallDir
 test
 .DS_Store
 coverage.txt
+cb.example.yml

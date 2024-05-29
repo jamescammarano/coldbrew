@@ -1,16 +1,18 @@
 package install
 
 import (
+	"bufio"
 	"database/sql"
 	"fmt"
 	"main/coldbrew/cmd/db/create"
 	"main/coldbrew/utils"
 	"os"
+	"os/exec"
 
 	"github.com/cbroglie/mustache"
-	"github.com/manifoldco/promptui"
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/sirupsen/logrus"
+	"github.com/spaceweasel/promptui"
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
 )
@@ -80,6 +82,10 @@ func installer(roast string) {
 
 	variables := generateVariables(utils.MergeMaps(config.Variables))
 
+	if variables["Restart"] == "" {
+		variables["Restart"] = "unless-stopped"
+	}
+
 	err = create.Seed(db, variables, roast)
 
 	if err != nil {
@@ -114,21 +120,38 @@ func installer(roast string) {
 
 	createDirs(config.Directories, variables)
 
-	fileManager(config.Files, variables)
-}
+	fileManager(config.Files, variables, roast)
 
-func generateVariables(variables map[string]string) map[string]string {
-	generated := map[string]string{}
+	_, err = os.Stat(fmt.Sprintf("%s/%s/config.sh", variables["InstallDir"], roast))
 
-	for attr, data := range variables {
-		if data == "func(base64)" {
-			generated[attr] = utils.Base64()
-		} else {
-			generated[attr] = data
+	if err == nil {
+		configScript := exec.Command("/bin/bash", "-c", fmt.Sprintf("%s/%s/config.sh", variables["InstallDir"], roast))
+
+		stdout, err := configScript.StderrPipe()
+
+		if err != nil {
+			logrus.Error(err)
+			os.Exit(1)
+		}
+
+		err = configScript.Start()
+
+		scanner := bufio.NewScanner(stdout)
+
+		scanner.Split(bufio.ScanLines)
+
+		for scanner.Scan() {
+			m := scanner.Text()
+			fmt.Println(m)
+		}
+
+		configScript.Wait()
+
+		if err != nil {
+			logrus.Error(err)
+			os.Exit(1)
 		}
 	}
-
-	return generated
 }
 
 func setTag(tags []string) (string, error) {
@@ -140,11 +163,7 @@ func setTag(tags []string) (string, error) {
 
 	_, tag, err := tagSelect.Run()
 
-	if err != nil {
-		return tag, err
-	}
-
-	return tag, nil
+	return tag, err
 }
 
 func readRows(rows *sql.Rows) (map[string]string, error) {
@@ -186,7 +205,37 @@ func createDirs(dirs []Directory, variables map[string]string) []error {
 	return errors
 }
 
-func fileManager(files []File, variables map[string]string) {
+func fileManager(files []File, variables map[string]string, roast string) {
+	_, err := os.Stat(fmt.Sprintf("%s/%s/config.sh", variables["InstallDir"], roast))
+
+	if err != nil {
+		configScript := exec.Command("/bin/bash", "-c", fmt.Sprintf("%s/%s/config.sh", variables["InstallDir"], roast))
+
+		err = configScript.Run()
+
+		if err != nil {
+			logrus.Error(err.Error())
+		}
+
+		str, err := mustache.RenderFile(fmt.Sprintf("./roasts/%v/config.sh", roast), variables)
+
+		if err != nil {
+			logrus.Error(err.Error())
+		}
+
+		err = os.MkdirAll(fmt.Sprintf("%s/%s", variables["InstallDir"], roast), 0777)
+
+		if err != nil {
+			logrus.Error(err.Error())
+		}
+
+		err = os.WriteFile(fmt.Sprintf("%s/%s/config.sh", variables["InstallDir"], roast), []byte(str), 0777)
+
+		if err != nil {
+			logrus.Error(err.Error())
+		}
+	}
+
 	for _, file := range files {
 
 		src, err := mustache.Render(file.Src, variables)
@@ -217,4 +266,17 @@ func fileManager(files []File, variables map[string]string) {
 			logrus.Error(err.Error())
 		}
 	}
+}
+
+func generateVariables(variables map[string]string) map[string]string {
+	generated := map[string]string{}
+
+	for attr, val := range variables {
+		if val == "__func(PromptInput)" {
+			generated[attr] = utils.PromptInput(attr)
+		} else {
+			generated[attr] = val
+		}
+	}
+	return generated
 }

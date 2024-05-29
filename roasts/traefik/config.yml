@@ -1,0 +1,29 @@
+tags:
+  - "2.10"
+vars:
+  - cf_api_key: __func(PromptInput)
+  - cf_email: __func(PromptInput)
+
+files:
+  - name: docker-compose.yml
+    src: "./roasts/traefik"
+    dest: "{{ InstallDir }}/traefik"
+
+  - name: traefik.yml
+    src: "./roasts/traefik/files"
+    dest: "{{ InstallDir }}/traefik"
+
+  - name: cf_api_key
+    src: "./roasts/traefik/files/secrets"
+    dest: "{{ InstallDir }}/traefik/secrets"
+
+  - name: cf_email
+    src: "./roasts/traefik/files/secrets"
+    dest: "{{ InstallDir }}/traefik/secrets"
+  
+  - name: acme.json
+    src: "./roasts/traefik/files"
+    dest: "{{ InstallDir }}/traefik/letsencrypt"
+
+addons:
+  - roast: authelia

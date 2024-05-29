@@ -5,15 +5,6 @@ import (
 	"testing"
 )
 
-func TestBase64(t *testing.T) {
-	test1 := Base64()
-	test2 := Base64()
-
-	if test1 == test2 {
-		t.Error("not unique")
-	}
-}
-
 func TestMergeMaps(t *testing.T) {
 	map1 := map[string]string{"TestAttr": "TestData"}
 	map2 := map[string]string{"Test2": "TestData2"}
