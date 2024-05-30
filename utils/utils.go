@@ -2,9 +2,19 @@ package utils
 
 import (
 	"errors"
+	"math/rand"
 
 	"github.com/spaceweasel/promptui"
 )
+
+func RandomString(n int) string {
+	alphanumeric := []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890")
+	random := make([]rune, n)
+	for r := range random {
+		random[r] = alphanumeric[rand.Int63()%int64(len(alphanumeric))]
+	}
+	return string(random)
+}
 
 func MergeMaps(mapArr []map[string]string) map[string]string {
 	merged := map[string]string{}

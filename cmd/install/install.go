@@ -122,10 +122,10 @@ func installer(roast string) {
 
 	fileManager(config.Files, variables, roast)
 
-	_, err = os.Stat(fmt.Sprintf("%s/%s/config.sh", variables["InstallDir"], roast))
+	_, err = os.Stat(fmt.Sprintf("%s/%s/post-install.sh", variables["InstallDir"], roast))
 
 	if err == nil {
-		configScript := exec.Command("/bin/bash", "-c", fmt.Sprintf("%s/%s/config.sh", variables["InstallDir"], roast))
+		configScript := exec.Command("/bin/bash", "-c", fmt.Sprintf("%s/%s/post-install.sh", variables["InstallDir"], roast))
 
 		stdout, err := configScript.StderrPipe()
 
@@ -206,10 +206,10 @@ func createDirs(dirs []Directory, variables map[string]string) []error {
 }
 
 func fileManager(files []File, variables map[string]string, roast string) {
-	_, err := os.Stat(fmt.Sprintf("%s/%s/config.sh", variables["InstallDir"], roast))
+	_, err := os.Stat(fmt.Sprintf("%s/%s/post-install.sh", variables["InstallDir"], roast))
 
 	if err != nil {
-		configScript := exec.Command("/bin/bash", "-c", fmt.Sprintf("%s/%s/config.sh", variables["InstallDir"], roast))
+		configScript := exec.Command("/bin/bash", "-c", fmt.Sprintf("%s/%s/post-install.sh", variables["InstallDir"], roast))
 
 		err = configScript.Run()
 
@@ -217,7 +217,7 @@ func fileManager(files []File, variables map[string]string, roast string) {
 			logrus.Error(err.Error())
 		}
 
-		str, err := mustache.RenderFile(fmt.Sprintf("./roasts/%v/config.sh", roast), variables)
+		str, err := mustache.RenderFile(fmt.Sprintf("./roasts/%v/post-install.sh", roast), variables)
 
 		if err != nil {
 			logrus.Error(err.Error())
@@ -229,7 +229,7 @@ func fileManager(files []File, variables map[string]string, roast string) {
 			logrus.Error(err.Error())
 		}
 
-		err = os.WriteFile(fmt.Sprintf("%s/%s/config.sh", variables["InstallDir"], roast), []byte(str), 0777)
+		err = os.WriteFile(fmt.Sprintf("%s/%s/post-install.sh", variables["InstallDir"], roast), []byte(str), 0777)
 
 		if err != nil {
 			logrus.Error(err.Error())

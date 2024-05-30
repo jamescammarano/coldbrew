@@ -1,0 +1,91 @@
+# yamllint disable rule:comments-indentation
+---
+###############################################################################
+#                           Authelia Configuration                            #
+###############################################################################
+
+theme: dark
+default_redirection_url: "https://{{ Domain }}"
+default_2fa_method: "totp"
+jwt_secret: "{{ JWTSecret }}"
+
+server:
+  host: 0.0.0.0
+  port: 9091
+  path: ""
+  enable_pprof: false
+  enable_expvars: false
+  disable_healthcheck: false
+
+log:
+  level: debug
+  format: text
+  file_path: /config/authelia.log
+  keep_stdout: true
+
+totp:
+  disable: false
+  issuer: titan.authelia.com
+  algorithm: sha1
+  digits: 6
+  period: 30
+  skew: 1
+  secret_size: 32
+
+webauthn:
+  disable: true
+
+ntp:
+  address: "time.cloudflare.com:123"
+  version: 4
+  max_desync: 3s
+  disable_startup_check: false
+  disable_failure: false
+
+authentication_backend:
+  file:
+    path: /config/users_database.yml
+    password:
+      iterations: 1
+      salt_length: 16
+      parallelism: 8
+      memory: 1024
+  # TODO Allow PW reset
+  password_reset:
+    disable: false
+
+password_policy:
+  standard:
+    enabled: false
+    min_length: 8
+    max_length: 0
+    require_uppercase: true
+    require_lowercase: true
+    require_number: true
+    require_special: true
+  zxcvbn:
+    enabled: false
+
+access_control:
+  default_policy: two_factor
+
+session:
+  name: authelia_session
+  domain: "{{ Domain }}"
+  same_site: lax
+  expiration: 1h
+  inactivity: 10m
+  remember_me_duration: 1M
+
+regulation:
+  max_retries: 300
+  find_time: 2m
+  ban_time: 3m
+
+storage:
+  local:
+    path: /config/db.sqlite3
+
+notifier:
+  filesystem:
+    filename: /config/notifications.txt

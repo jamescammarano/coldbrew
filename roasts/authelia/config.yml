@@ -1,0 +1,12 @@
+tags:
+  - "2.10"
+vars:
+  - StorageEncryptionKey: __func(RandomString(128))
+  - JWTSecret: __func(RandomString(128))
+  - SessionSecret: __func(RandomString(128)
+  - AdminName: __func(PromptInput)  
+
+files:
+  - name: docker-compose.yml
+    src: "./roasts/authelia"
+    dest: "{{ InstallDir }}/authelia"

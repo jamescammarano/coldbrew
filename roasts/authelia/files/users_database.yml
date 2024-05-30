@@ -1,0 +1,8 @@
+users:
+  {{ AdminName }}:
+    displayname: {{ AdminName }}
+    password: {{ Password }}
+    email: {{ Email }}
+    groups:
+      - admins
+      - dev

@@ -1,0 +1,22 @@
+services:
+  authelia:
+    container_name: authelia
+    image: docker.io/authelia/authelia:latest
+    restart: unless-stopped
+    environment:
+      AUTHELIA_STORAGE_ENCRYPTION_KEY_FILE: /secrets/STORAGE_ENCRYPTION_KEY
+    volumes:
+      - "{{ InstallDir }}authelia:/config"
+      - "{{ InstallDir }}authelia/secrets:/secrets"
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=traefik_public
+      - "traefik.http.routers.authelia.rule=Host(`authelia.{{ Domain }}`)"
+      - "traefik.http.routers.authelia.entrypoints=https"
+      - "traefik.http.services.authelia.loadbalancer.server.port=9091"
+    networks:
+      - traefik_public
+
+networks:
+  traefik_public:
+    external: true

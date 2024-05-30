@@ -19,3 +19,8 @@ func TestMergeMaps(t *testing.T) {
 		t.Error(eq)
 	}
 }
+
+func TestRandomString(t *testing.T) {
+	test := RandomString(8)
+	println(test)
+}
