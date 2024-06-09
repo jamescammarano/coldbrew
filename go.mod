@@ -1,9 +1,10 @@
-module main/coldbrew
+module coldbrew.go/cb
 
 go 1.22.3
 
 require (
 	github.com/cbroglie/mustache v1.4.0
+	github.com/otiai10/copy v1.14.0
 	github.com/sirupsen/logrus v1.9.3
 	github.com/spaceweasel/promptui v0.8.1
 	github.com/spf13/cobra v1.8.0
@@ -15,6 +16,7 @@ require (
 	github.com/lunixbochs/vtclean v1.0.0 // indirect
 	github.com/mattn/go-colorable v0.1.8 // indirect
 	github.com/mattn/go-isatty v0.0.12 // indirect
+	golang.org/x/sync v0.3.0 // indirect
 )
 
 require (

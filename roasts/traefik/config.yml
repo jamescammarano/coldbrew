@@ -1,13 +1,20 @@
 tags:
   - "2.10"
 vars:
-  - cf_api_key: __func(PromptInput)
-  - cf_email: __func(PromptInput)
+  cf_api_key:
+    util: PromptInput
+  cf_email:
+    util: PromptInput
+
 
 files:
   - name: docker-compose.yml
     src: "./roasts/traefik"
     dest: "{{ InstallDir }}/traefik"
+
+  - name: middlewares.yml
+    src: "./roasts/traefik/files/rules"
+    dest: "{{ InstallDir }}/traefik/rules"
 
   - name: traefik.yml
     src: "./roasts/traefik/files"
@@ -21,6 +28,7 @@ files:
     src: "./roasts/traefik/files/secrets"
     dest: "{{ InstallDir }}/traefik/secrets"
   
+  # TODO Make this writable by docker
   - name: acme.json
     src: "./roasts/traefik/files"
     dest: "{{ InstallDir }}/traefik/letsencrypt"

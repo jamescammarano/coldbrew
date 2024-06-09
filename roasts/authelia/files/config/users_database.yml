@@ -1,6 +1,7 @@
 users:
   {{ AdminName }}:
-    displayname: {{ AdminName }}
+    displayname: {{ AdminDisplayName }}
+    # TODO HASH FIRST
     password: {{ Password }}
     email: {{ Email }}
     groups:

@@ -1,6 +1,4 @@
 ---
-version: "3"
-
 secrets:
   cf_email:
     file: "secrets/cf_email"
@@ -28,7 +26,7 @@ services:
       - cf_api_key
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
-      - "{{ InstallDir }}/traefik/letsencrypt/acme.json:/letsencrypt/acme.json"
+      - "{{ InstallDir }}/traefik/letsencrypt:/letsencrypt"
       - "{{ InstallDir }}/traefik/rules:/rules"
       - "{{ InstallDir }}/traefik/traefik.yml:/etc/traefik/traefik.yml"
 
@@ -40,6 +38,8 @@ services:
       - traefik.http.routers.traefik-dashboard.tls.certresolver=main
       - "traefik.http.routers.traefik-dashboard.rule=Host(`traefik.{{ Domain }}`)"
       - "traefik.http.routers.traefik-dashboard.service=api@internal"
+      - "traefik.http.routers.traefik-rtr.middlewares=middlewares-authelia@file"
+
     networks:
       - traefik_public
     restart: "{{ Restart }}"

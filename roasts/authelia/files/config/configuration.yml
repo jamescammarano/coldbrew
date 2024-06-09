@@ -7,14 +7,15 @@
 theme: dark
 default_redirection_url: "https://{{ Domain }}"
 default_2fa_method: "totp"
-jwt_secret: "{{ JWTSecret }}"
+identity_validation:
+  reset_password:
+    jwt_secret: "{{ JWTSecret }}"
 
 server:
-  host: 0.0.0.0
-  port: 9091
-  path: ""
-  enable_pprof: false
-  enable_expvars: false
+  address: 'tcp://127.0.0.1:9091/'
+  endpoints:
+    enable_pprof: false
+    enable_expvars: false
   disable_healthcheck: false
 
 log:
@@ -44,7 +45,7 @@ ntp:
 
 authentication_backend:
   file:
-    path: /config/users_database.yml
+    path: config/users_database.yml
     password:
       iterations: 1
       salt_length: 16
@@ -71,11 +72,12 @@ access_control:
 
 session:
   name: authelia_session
+  # TODO depricated
   domain: "{{ Domain }}"
   same_site: lax
   expiration: 1h
   inactivity: 10m
-  remember_me_duration: 1M
+  remember_me: 1M
 
 regulation:
   max_retries: 300
@@ -84,8 +86,8 @@ regulation:
 
 storage:
   local:
-    path: /config/db.sqlite3
+    path: config/db.sqlite3
 
 notifier:
   filesystem:
-    filename: /config/notifications.txt
+    filename: config/notifications.txt

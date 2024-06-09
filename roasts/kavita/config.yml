@@ -3,7 +3,7 @@ tags:
   - nightly
 vars:
   - Port: "5000"
-dirs: 
+mkdirs: 
   - name: books
     dest: "{{ MediaDir }}"
   - name: comics

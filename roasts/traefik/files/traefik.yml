@@ -28,8 +28,13 @@ entryPoints:
         entryPoint:
           to: "https"
           scheme: "https"
+      middlewares:
+        - middlewares-authelia@file
+
   https:
     http:
+      middlewares:
+        - middlewares-authelia@file
       tls:
         certResolver: "main"
         domains:
@@ -65,3 +70,5 @@ providers:
     endpoint: "unix:///var/run/docker.sock"
     exposedByDefault: false
     network: traefik_public
+  file:
+    filename: "/rules/middlewares.yml"

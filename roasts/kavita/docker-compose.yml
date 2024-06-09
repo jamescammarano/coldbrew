@@ -1,5 +1,4 @@
 ---
-version: "3"
 services:
   kavita:
     image: "jvmilazz0/kavita:{{ tag }}"
@@ -15,6 +14,7 @@ services:
       - "traefik.http.routers.kavita.rule=Host(`kavita.{{ Domain }}`)"
       - "traefik.http.routers.kavita.entrypoints=https"
       - "traefik.http.services.kavita.loadbalancer.server.port={{ Port }}"
+      - "traefik.http.routers.kavita.tls.certresolver=main"
     restart: "{{ Restart }}"
     networks:
       - traefik_public

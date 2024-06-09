@@ -1,12 +1,61 @@
 tags:
-  - "2.10"
+  - "master"
 vars:
-  - StorageEncryptionKey: __func(RandomString(128))
-  - JWTSecret: __func(RandomString(128))
-  - SessionSecret: __func(RandomString(128)
-  - AdminName: __func(PromptInput)  
+# TODO if it overwrites the vars each time in the db what is the point of this software?
+# it should warn. Maybe the rand ones should prompt for "autogenerate or manually enter"
+# use keys instead of weird __func() stuff
+  StorageEncryptionKey:
+    util: RandomString
+    vars: ["128"] # default is 128 but im leaving this here as an example
+  JWTSecret:
+      util: RandomString
+  SessionSecret:    
+      util: RandomString
+  # need to add validation to this to match yml validation
+  AdminName: 
+      util: PromptInput
+  # can I add a "use AdminName" feature?
+  AdminDisplayName: 
+      util: PromptInput
+  Password: 
+      value: db.authelia.Password # It's dot notation to go to the db. Util or value?
+  Email: 
+      util: PromptInput
+  Port: 
+    value: "9091"
 
+mkdirs:
+  - name: "config"
+    # If source is included then it will copy. Otherwise it mkdir
+    src: "./roasts/authelia/files/config"
+    dest: "{{ InstallDir }}/authelia/config"
+
+# TODO Could have a scaffold util that checks the files that have {{  }} and adds them to this list
+# and adds the vars sect too (w the type to be filled in)
 files:
   - name: docker-compose.yml
     src: "./roasts/authelia"
     dest: "{{ InstallDir }}/authelia"
+ 
+  - name: JWT_SECRET
+    src: "./roasts/authelia/files/secrets"
+    dest: "{{ InstallDir }}/authelia/secrets"
+
+  - name: SESSION_SECRET
+    src: "./roasts/authelia/files/secrets"
+    dest: "{{ InstallDir }}/authelia/secrets"
+
+  - name: STORAGE_ENCRYPTION_KEY
+    src: "./roasts/authelia/files/secrets"
+    dest: "{{ InstallDir }}/authelia/secrets"
+
+  - name: users_database.yml
+    src: "./roasts/authelia/files/config"
+    dest: "{{ InstallDir }}/authelia/config"
+
+  - name: configuration.yml
+    src: "./roasts/authelia/files/config"
+    dest: "{{ InstallDir }}/authelia/config"
+
+scripts:
+  - config.Preinstall

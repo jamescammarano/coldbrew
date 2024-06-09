@@ -2,7 +2,8 @@ http:
   middlewares:
     middlewares-authelia:
       forwardAuth:
-        address: "http://authelia:{{ authelia_port }}/api/verify?rd=https://authelia.{{ domain }}"
+        # TODO Load that port
+        address: "http://authelia:{{ Authelia.Port }}/api/verify?rd=https://authelia.{{ Domain }}"
         trustForwardHeader: true
         authResponseHeaders:
           - "Remote-User"

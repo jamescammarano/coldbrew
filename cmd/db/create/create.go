@@ -2,10 +2,12 @@ package create
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
-	"main/coldbrew/utils"
 	"os"
+	"strings"
 
+	"coldbrew.go/cb/common"
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -13,7 +15,7 @@ import (
 )
 
 type Config struct {
-	Variables []map[string]string `yaml:"vars"`
+	Variables map[string]common.Variable `yaml:"vars"`
 }
 
 var Cmd = &cobra.Command{
@@ -28,44 +30,46 @@ var Cmd = &cobra.Command{
 
 		os.Create("./InstallDir/data.db")
 
+		// TODO don't hardcode this
 		db, err := sql.Open("sqlite3", "./InstallDir/data.db")
 
 		if err != nil {
-			logrus.Error(err.Error())
+			logrus.Error(err)
 			os.Exit(1)
 		}
+
 		defer db.Close()
 
 		err = CreatePortsTable(db)
 
 		if err != nil {
-			logrus.Error(err.Error())
+			logrus.Error(err)
 			os.Exit(1)
 		}
 
 		err = CreateTable(db, "Global")
 
 		if err != nil {
-			logrus.Error(err.Error())
+			logrus.Error(err)
 			os.Exit(1)
 		}
 
 		res, err := os.ReadFile("./cb.example.yml")
 
 		if err != nil {
-			logrus.Error(err.Error())
+			logrus.Error(err)
 		}
 
 		err = yaml.Unmarshal(res, &config)
 
 		if err != nil {
-			logrus.Error(err.Error())
+			logrus.Error(err)
 		}
 
-		err = Seed(db, utils.MergeMaps(config.Variables), "Global")
+		errs := Seed(db, common.GenerateVariables(config.Variables), "Global")
 
-		if err != nil {
-			logrus.Error(err.Error())
+		for _, err := range errs {
+			logrus.Error(err)
 		}
 	},
 }
@@ -87,22 +91,21 @@ func CreatePortsTable(db *sql.DB) error {
 	return err
 }
 
-func Seed(db *sql.DB, vars map[string]string, roast string) error {
+func Seed(db *sql.DB, vars map[string]string, roast string) []error {
 	insertQuery := fmt.Sprintf("INSERT INTO %v (attr, data) VALUES ($2, $3)", roast)
+	var errs []error
 	var err error
 
 	for attr, data := range vars {
 		if attr == "Port" || attr == "port" {
 			_, err = db.Exec("INSERT INTO Port (app, port) VALUES ($2, $3)", roast, data)
 		} else {
-			logrus.Info(attr)
 			_, err = db.Exec(insertQuery, attr, data)
 		}
-
 		if err != nil {
-			return err
+			errs = append(errs, errors.New(strings.ReplaceAll(err.Error(), "attr", attr)))
 		}
 	}
 
-	return nil
+	return errs
 }
