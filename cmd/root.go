@@ -4,9 +4,11 @@ Copyright © 2024 NAME HERE <EMAIL ADDRESS>
 package cmd
 
 import (
-	"main/coldbrew/cmd/db"
-	"main/coldbrew/cmd/install"
 	"os"
+
+	"coldbrew.go/cb/cmd/db"
+	"coldbrew.go/cb/cmd/install"
+	"coldbrew.go/cb/cmd/reinstall"
 
 	"github.com/spf13/cobra"
 )
@@ -34,4 +36,5 @@ func Execute() {
 func init() {
 	rootCmd.AddCommand(install.Cmd)
 	rootCmd.AddCommand(db.Cmd)
+	rootCmd.AddCommand(reinstall.Cmd)
 }

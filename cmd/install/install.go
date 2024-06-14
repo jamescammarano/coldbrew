@@ -1,156 +1,125 @@
 package install
 
 import (
-	"bufio"
-	"database/sql"
+	"bytes"
 	"fmt"
-	"main/coldbrew/cmd/db/create"
-	"main/coldbrew/utils"
+	"io"
+	"io/fs"
 	"os"
 	"os/exec"
+	"strings"
+
+	"coldbrew.go/cb/common/database"
+	"coldbrew.go/cb/common/types"
+	"coldbrew.go/cb/common/utils"
 
 	"github.com/cbroglie/mustache"
 	_ "github.com/mattn/go-sqlite3"
+	"github.com/otiai10/copy"
 	"github.com/sirupsen/logrus"
 	"github.com/spaceweasel/promptui"
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
 )
 
-type File struct {
-	Name string `yaml:"name"`
-	Src  string `yaml:"src"`
-	Dest string `yaml:"dest"`
-}
-
-type Directory struct {
-	Name string `yaml:"name"`
-	Dest string `yaml:"dest"`
-}
-
-type Addons []struct {
-	Roast string `yaml:"roast"`
-}
-
-type Config struct {
-	Tags        []string            `yaml:"tags"`
-	Variables   []map[string]string `yaml:"vars"`
-	Directories []Directory         `yaml:"dirs,omitempty"`
-	Files       []File              `yaml:"files,omitempty"`
-	Restart     string              `yaml:"restart,omitempty"`
-	Addons      Addons              `yaml:"addons,omitempty"`
-}
-
 var Cmd = &cobra.Command{
 	Use:   "install",
 	Short: "usage: cb install roast",
 	Long:  "install new roasts",
 	Run: func(cmd *cobra.Command, args []string) {
-		installer(args[0])
+		// TODO make a flag "--skip-prerun" for testing?
+		Installer(args[0])
 	},
 }
 
-func installer(roast string) {
-	var config = Config{}
+func Installer(roast string) {
+	var config = types.Config{}
+
+	db := database.OpenDatabase()
+
+	defer db.Close()
+	prerun(roast, db)
 
 	b, err := os.ReadFile(fmt.Sprintf("./roasts/%s/config.yml", roast))
 
 	if err != nil {
-		logrus.Error(err.Error())
+		logrus.Error(err)
 		os.Exit(1)
 	}
 
 	err = yaml.Unmarshal([]byte(b), &config)
 
 	if err != nil {
-		logrus.Error(err.Error())
+		logrus.Error(err)
 	}
 
-	db, err := sql.Open("sqlite3", "./InstallDir/data.db")
+	err = database.CreateAppTable(db, roast)
 
 	if err != nil {
-		logrus.Error(err.Error())
+		logrus.Error(err)
 	}
 
-	defer db.Close()
-
-	err = create.CreateTable(db, roast)
-
-	if err != nil {
-		logrus.Error(err.Error())
-	}
-
-	variables := generateVariables(utils.MergeMaps(config.Variables))
+	// TODO should use the variables loaded from the db and only fill in the missing vars
+	// (this should never actually happen though)
+	variables := utils.GenerateVariables(config.Variables)
 
 	if variables["Restart"] == "" {
 		variables["Restart"] = "unless-stopped"
 	}
 
-	err = create.Seed(db, variables, roast)
-
-	if err != nil {
-		logrus.Error(err.Error())
-	}
-
 	rows, err := db.Query("SELECT attr, data FROM `Global`")
 
 	if err != nil {
-		logrus.Error(err.Error())
+		logrus.Error(err)
 	}
 
-	res, err := readRows(rows)
+	res, err := database.ReadRows(rows)
 
 	if err != nil {
-		logrus.Error(err.Error())
+		logrus.Error(err)
 	}
 
+	// This prefers the global var to anything the roast requires for its own needs where names clash
 	for attr, data := range res {
 		variables[attr] = data
-
 	}
 
 	tag, err := setTag(config.Tags)
 
 	for err != nil {
-		logrus.Error(err.Error())
+		logrus.Error(err)
 		tag, err = setTag(config.Tags)
 	}
 
-	variables["tag"] = tag
+	variables["Tag"] = tag
 
-	createDirs(config.Directories, variables)
+	errs := database.Insert(db, variables, roast)
 
-	fileManager(config.Files, variables, roast)
+	for _, err := range errs {
+		logrus.Error(err)
+	}
 
-	_, err = os.Stat(fmt.Sprintf("%s/%s/config.sh", variables["InstallDir"], roast))
+	// TODO Subvars in files before mkdir, I would just mv it to line 144 but I don't want to overwrite the
+	// subbed files. no "onFileExists" opt on that copy package
+	errs = mkdirs(config.Directories, variables)
 
-	if err == nil {
-		configScript := exec.Command("/bin/bash", "-c", fmt.Sprintf("%s/%s/config.sh", variables["InstallDir"], roast))
+	for _, err := range errs {
+		logrus.Error(err)
+	}
+	// TODO test 0600 perms
+	postInstaller := types.File{Name: "post-install.sh", Dest: fmt.Sprintf("%s/%s", variables["InstallDir"], roast), Src: fmt.Sprintf("./roasts/%v/", roast), Perms: 0777}
+	_, fileExistErr := os.Stat(postInstaller.Src)
 
-		stdout, err := configScript.StderrPipe()
+	if fileExistErr == nil {
+		config.Files = append(config.Files, postInstaller)
+	}
 
-		if err != nil {
-			logrus.Error(err)
-			os.Exit(1)
-		}
+	for _, file := range config.Files {
+		fileFormatter(file, variables)
+	}
 
-		err = configScript.Start()
-
-		scanner := bufio.NewScanner(stdout)
-
-		scanner.Split(bufio.ScanLines)
-
-		for scanner.Scan() {
-			m := scanner.Text()
-			fmt.Println(m)
-		}
-
-		configScript.Wait()
-
-		if err != nil {
-			logrus.Error(err)
-			os.Exit(1)
-		}
+	if fileExistErr == nil {
+		runScript(fmt.Sprintf("%s/%s", postInstaller.Dest, postInstaller.Name))
 	}
 }
 
@@ -166,117 +135,100 @@ func setTag(tags []string) (string, error) {
 	return tag, err
 }
 
-func readRows(rows *sql.Rows) (map[string]string, error) {
-	result := map[string]string{}
-	var (
-		attr string
-		data string
-	)
-	defer rows.Close()
-
-	for rows.Next() {
-		err := rows.Scan(&attr, &data)
-		if err != nil {
-			return result, err
-		}
-		result[attr] = data
-	}
-	return result, nil
-}
-
-func createDirs(dirs []Directory, variables map[string]string) []error {
+func mkdirs(dirs []types.Directory, variables map[string]string) []error {
 	errors := []error{}
 	for _, dir := range dirs {
-		sub, err := mustache.Render(dir.Dest, variables)
+		// TODO default file permission
+		// TODO I don't need to sub as I copy because fileManager will sub as it copies
+		// WILL create redundancy in copying files multiple times so not ideal
+
+		// replaces the variables in the filepath so it knows what to make where
+		path, err := mustache.Render(dir.Dest, variables)
 
 		if err != nil {
 			errors = append(errors, err)
-			logrus.Error(err.Error())
+			logrus.Error(err)
 		}
 
-		dest := fmt.Sprintf("%s/%s", sub, dir.Name)
+		// makes the path string
+		dest := fmt.Sprintf("%s/%s", path, dir.Name)
 
-		err = os.MkdirAll(dest, 0777)
+		// I need to add an "if src attr exist: copy"
+		if dir.Src != "" {
+			err = copy.Copy(dir.Src, path)
 
-		if err != nil {
-			errors = append(errors, err)
+			if err != nil {
+				errors = append(errors, err)
+			}
+
+		} else {
+			err = os.MkdirAll(dest, fs.FileMode(dir.Perms))
+
+			if err != nil {
+				errors = append(errors, err)
+			}
 		}
 	}
 	return errors
 }
 
-func fileManager(files []File, variables map[string]string, roast string) {
-	_, err := os.Stat(fmt.Sprintf("%s/%s/config.sh", variables["InstallDir"], roast))
+func fileFormatter(file types.File, variables map[string]string) {
+	// make the source filepath (var subs)
+	src, err := mustache.Render(file.Src, variables)
 
 	if err != nil {
-		configScript := exec.Command("/bin/bash", "-c", fmt.Sprintf("%s/%s/config.sh", variables["InstallDir"], roast))
-
-		err = configScript.Run()
-
-		if err != nil {
-			logrus.Error(err.Error())
-		}
-
-		str, err := mustache.RenderFile(fmt.Sprintf("./roasts/%v/config.sh", roast), variables)
-
-		if err != nil {
-			logrus.Error(err.Error())
-		}
-
-		err = os.MkdirAll(fmt.Sprintf("%s/%s", variables["InstallDir"], roast), 0777)
-
-		if err != nil {
-			logrus.Error(err.Error())
-		}
-
-		err = os.WriteFile(fmt.Sprintf("%s/%s/config.sh", variables["InstallDir"], roast), []byte(str), 0777)
-
-		if err != nil {
-			logrus.Error(err.Error())
-		}
+		logrus.Error(err)
 	}
 
-	for _, file := range files {
+	// make the dest filepath (var subs)
+	dest, err := mustache.Render(file.Dest, variables)
+	if err != nil {
+		logrus.Error("While subbing the file destination path: ", err)
+	}
 
-		src, err := mustache.Render(file.Src, variables)
-		if err != nil {
-			logrus.Error(err.Error())
-		}
+	// TODO not 777
+	err = os.MkdirAll(dest, 0777)
 
-		dest, err := mustache.Render(file.Dest, variables)
-		if err != nil {
-			logrus.Error("mustache fileDest: ", err.Error())
-		}
+	if err != nil {
+		logrus.Error(err)
+	}
 
-		err = os.MkdirAll(dest, 0777)
+	str, err := mustache.RenderFile(fmt.Sprintf(`%v/%v`, src, file.Name), variables)
 
-		if err != nil {
-			logrus.Error(err.Error())
-		}
+	if err != nil {
+		logrus.Error(err)
+	}
 
-		str, err := mustache.RenderFile(fmt.Sprintf(`%v/%v`, src, file.Name), variables)
+	// TODO openable by bin and by docker w/ perms 600. currently mkdirall makes a directory that isn't writable
+	err = os.WriteFile(fmt.Sprintf(`%v/%v`, dest, file.Name), []byte(str), fs.FileMode(file.Perms))
 
-		if err != nil {
-			logrus.Error(err.Error())
-		}
-
-		err = os.WriteFile(fmt.Sprintf(`%v/%v`, dest, file.Name), []byte(str), 0777)
-
-		if err != nil {
-			logrus.Error(err.Error())
-		}
+	if err != nil {
+		logrus.Error(err)
 	}
 }
 
-func generateVariables(variables map[string]string) map[string]string {
-	generated := map[string]string{}
+func runScript(path string) (string, error) {
+	args := strings.Split("-c "+path, " ")
+	r, w, _ := os.Pipe()
+	os.Stdout = w
+	postinstaller := exec.Command("/bin/bash", args...)
+	postinstaller.Stdout = os.Stdout
+	postinstaller.Stderr = os.Stderr
 
-	for attr, val := range variables {
-		if val == "__func(PromptInput)" {
-			generated[attr] = utils.PromptInput(attr)
-		} else {
-			generated[attr] = val
-		}
-	}
-	return generated
+	err := postinstaller.Run()
+
+	outC := make(chan string)
+	// TODO MAKE THIS MY OWN
+	// copy the output in a separate goroutine so printing can't block indefinitely
+	go func() {
+		var buf bytes.Buffer
+		io.Copy(&buf, r)
+		outC <- buf.String()
+	}()
+
+	// back to normal state
+	w.Close()
+	out := <-outC
+
+	return out, err
 }
