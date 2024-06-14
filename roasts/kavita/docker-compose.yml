@@ -1,7 +1,7 @@
 ---
 services:
   kavita:
-    image: "jvmilazz0/kavita:{{ tag }}"
+    image: "jvmilazz0/kavita:{{ Tag }}"
     container_name: kavita
     volumes:
       - "{{ MediaDir }}/manga:/manga"

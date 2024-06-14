@@ -1,13 +1,13 @@
 ---
 secrets:
-  cf_email:
-    file: "secrets/cf_email"
-  cf_api_key:
-    file: "secrets/cf_api_key" # Global API Key not Origin CA Key
+  CLOUDFLARE_ZONE_API_TOKEN:
+    file: "secrets/CLOUDFLARE_ZONE_API_TOKEN"
+  CLOUDFLARE_DNS_API_TOKEN:
+    file: "secrets/CLOUDFLARE_DNS_API_TOKEN" # Global API Key not Origin CA Key
 
 services:
   reverse-proxy:
-    image: traefik:v2.10
+    image: traefik:{{ Tag }}
     ports:
       - target: 80
         published: 80
@@ -19,26 +19,25 @@ services:
         mode: host
     environment:
       - TZ=America/New_York
-      - CF_API_EMAIL_FILE=/run/secrets/cf_email
-      - CF_API_KEY_FILE=/run/secrets/cf_api_key
+      - CLOUDFLARE_DNS_API_TOKEN=/run/secrets/CLOUDFLARE_DNS_API_TOKEN
+      - CLOUDFLARE_ZONE_API_TOKEN=/run/secrets/CLOUDFLARE_ZONE_API_TOKEN
     secrets:
-      - cf_email
-      - cf_api_key
+      - CLOUDFLARE_ZONE_API_TOKEN
+      - CLOUDFLARE_DNS_API_TOKEN
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - "{{ InstallDir }}/traefik/letsencrypt:/letsencrypt"
-      - "{{ InstallDir }}/traefik/rules:/rules"
       - "{{ InstallDir }}/traefik/traefik.yml:/etc/traefik/traefik.yml"
 
     labels:
       # Crucial! This tells Traefik to actually pay attention to this container
       - "traefik.enable=true"
+
       - "traefik.http.routers.traefik-dashboard.entrypoints=https"
-      - traefik.http.routers.traefik-dashboard.tls=true
-      - traefik.http.routers.traefik-dashboard.tls.certresolver=main
+      - "traefik.http.routers.traefik-dashboard.tls=true"
+      - "traefik.http.routers.traefik-dashboard.tls.certresolver=main"
       - "traefik.http.routers.traefik-dashboard.rule=Host(`traefik.{{ Domain }}`)"
       - "traefik.http.routers.traefik-dashboard.service=api@internal"
-      - "traefik.http.routers.traefik-rtr.middlewares=middlewares-authelia@file"
 
     networks:
       - traefik_public

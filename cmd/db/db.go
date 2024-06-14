@@ -4,8 +4,7 @@ Copyright © 2024 NAME HERE <EMAIL ADDRESS>
 package db
 
 import (
-	"coldbrew.go/cb/cmd/db/create"
-
+	"coldbrew.go/cb/cmd/db/bootstrap"
 	"github.com/spf13/cobra"
 )
 
@@ -16,5 +15,5 @@ var Cmd = &cobra.Command{
 }
 
 func init() {
-	Cmd.AddCommand(create.Cmd)
+	Cmd.AddCommand(bootstrap.Cmd)
 }

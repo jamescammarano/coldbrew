@@ -8,8 +8,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func Prerun(roast string, db *sql.DB) {
-	// TODO make hash of all of the utils and store in global mem or something?
+func prerun(roast string, db *sql.DB) {
 	// call db?
 	// TODO check for updates to cb
 
@@ -23,6 +22,7 @@ func Prerun(roast string, db *sql.DB) {
 }
 
 // TODO LP prerun scrape all the utils functions and then dynamically call them?
+// make hash of all of the utils and store in global mem or something?
 func UtilCheck() {
 	// grep -re '^func'
 	// side effect time?

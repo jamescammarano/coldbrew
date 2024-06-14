@@ -2,7 +2,6 @@ package authelia
 
 import (
 	"bytes"
-	"database/sql"
 	"fmt"
 	"io"
 	"os"
@@ -11,8 +10,8 @@ import (
 
 	"testing"
 
-	"coldbrew.go/cb/cmd/db/create"
-	"coldbrew.go/cb/common"
+	"coldbrew.go/cb/common/database"
+	"coldbrew.go/cb/common/utils"
 	"github.com/sirupsen/logrus"
 )
 
@@ -47,36 +46,35 @@ func EncryptPasswords(password string) (string, error) {
 func Preinstall() {
 	// TODO make this an easily callable flow, the use case of needing custom variable
 	// insertion seems like it will be common
-	password, err := EncryptPasswords(common.PromptInput("password"))
+	password, err := EncryptPasswords(utils.PromptInput("password"))
 
 	if err != nil {
 		logrus.Error(err)
 	}
 
-	// TODO still don't hardcode the db location
-	db, err := sql.Open("sqlite3", "./InstallDir/data.db")
+	db := database.OpenDatabase()
 
-	if err != nil {
-		logrus.Error(err)
-		os.Exit(1)
-	}
 	defer db.Close()
 
-	err = create.CreatePortsTable(db)
+	app := database.Column{Name: "app", Type: "VARCHAR(64)", Nullable: false, Unique: true}
+	port := database.Column{Name: "port", Type: "INT", Nullable: true, Unique: false}
+
+	err = database.CreateTable(db, []database.Column{app, port}, "Port")
+
+	// This will err if the table exists btw
+	if err != nil {
+		logrus.Error(err)
+		os.Exit(1)
+	}
+
+	err = database.CreateAppTable(db, "authelia")
 
 	if err != nil {
 		logrus.Error(err)
 		os.Exit(1)
 	}
 
-	err = create.CreateTable(db, "authelia")
-
-	if err != nil {
-		logrus.Error(err)
-		os.Exit(1)
-	}
-
-	errs := create.Seed(db, map[string]string{"password": password}, "authelia")
+	errs := database.Insert(db, map[string]string{"password": password}, "authelia")
 
 	for _, err := range errs {
 		logrus.Error(err)

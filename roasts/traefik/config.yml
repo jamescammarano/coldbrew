@@ -1,37 +1,56 @@
 tags:
+  - "3.0.2"
+  - "2.11.3"
   - "2.10"
+  
 vars:
   cf_api_key:
     util: PromptInput
-  cf_email:
+  cf_api_email:
     util: PromptInput
 
+mkdirs:
+  - name: conf.d
+    dest: "{{ InstallDir }}/traefik/.config"
+    src: "./roasts/traefik/files/.config/"
+    perms: 0600
 
 files:
   - name: docker-compose.yml
-    src: "./roasts/traefik"
+    src: "./roasts/traefik/"
     dest: "{{ InstallDir }}/traefik"
-
-  - name: middlewares.yml
-    src: "./roasts/traefik/files/rules"
-    dest: "{{ InstallDir }}/traefik/rules"
+    perms: 0600
 
   - name: traefik.yml
-    src: "./roasts/traefik/files"
+    src: "./roasts/traefik/files/.config"
     dest: "{{ InstallDir }}/traefik"
+    perms: 0777
 
   - name: cf_api_key
     src: "./roasts/traefik/files/secrets"
     dest: "{{ InstallDir }}/traefik/secrets"
+    perms: 0777
+
+
+  - name: CLOUDFLARE_DNS_API_TOKEN
+    src: "./roasts/traefik/files/secrets"
+    dest: "{{ InstallDir }}/traefik/secrets"
+    perms: 0777  
+  
+  - name: CLOUDFLARE_ZONE_API_TOKEN
+    src: "./roasts/traefik/files/secrets"
+    dest: "{{ InstallDir }}/traefik/secrets"
+    perms: 0777
 
   - name: cf_email
     src: "./roasts/traefik/files/secrets"
     dest: "{{ InstallDir }}/traefik/secrets"
-  
-  # TODO Make this writable by docker
+    perms: 0777
+ 
   - name: acme.json
     src: "./roasts/traefik/files"
     dest: "{{ InstallDir }}/traefik/letsencrypt"
+    perms: 0600
 
 addons:
   - roast: authelia

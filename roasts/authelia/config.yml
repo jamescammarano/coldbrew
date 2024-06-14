@@ -1,9 +1,9 @@
 tags:
+  - "4.38"
   - "master"
 vars:
 # TODO if it overwrites the vars each time in the db what is the point of this software?
 # it should warn. Maybe the rand ones should prompt for "autogenerate or manually enter"
-# use keys instead of weird __func() stuff
   StorageEncryptionKey:
     util: RandomString
     vars: ["128"] # default is 128 but im leaving this here as an example
@@ -18,7 +18,7 @@ vars:
   AdminDisplayName: 
       util: PromptInput
   Password: 
-      value: db.authelia.Password # It's dot notation to go to the db. Util or value?
+      util: authelia.EncryptPassword # It's dot notation to go to the db. Util or value? this doesn't make sense
   Email: 
       util: PromptInput
   Port: 
@@ -27,8 +27,11 @@ vars:
 mkdirs:
   - name: "config"
     # If source is included then it will copy. Otherwise it mkdir
+    # TODO sub vars in mkdirs would save a lot of space on the config file
+
     src: "./roasts/authelia/files/config"
     dest: "{{ InstallDir }}/authelia/config"
+
 
 # TODO Could have a scaffold util that checks the files that have {{  }} and adds them to this list
 # and adds the vars sect too (w the type to be filled in)
@@ -36,26 +39,34 @@ files:
   - name: docker-compose.yml
     src: "./roasts/authelia"
     dest: "{{ InstallDir }}/authelia"
+    perms: 0600
  
   - name: JWT_SECRET
     src: "./roasts/authelia/files/secrets"
     dest: "{{ InstallDir }}/authelia/secrets"
+    perms: 0600
 
   - name: SESSION_SECRET
     src: "./roasts/authelia/files/secrets"
-    dest: "{{ InstallDir }}/authelia/secrets"
+    dest: "{{ InstallDir }}/authelia/secrets" 
+    perms: 0600
+
 
   - name: STORAGE_ENCRYPTION_KEY
     src: "./roasts/authelia/files/secrets"
     dest: "{{ InstallDir }}/authelia/secrets"
+    perms: 0600
+
 
   - name: users_database.yml
     src: "./roasts/authelia/files/config"
     dest: "{{ InstallDir }}/authelia/config"
+    perms: 0600
 
   - name: configuration.yml
     src: "./roasts/authelia/files/config"
     dest: "{{ InstallDir }}/authelia/config"
+    perms: 0600
 
 scripts:
   - config.Preinstall

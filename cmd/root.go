@@ -8,6 +8,7 @@ import (
 
 	"coldbrew.go/cb/cmd/db"
 	"coldbrew.go/cb/cmd/install"
+	"coldbrew.go/cb/cmd/reinstall"
 
 	"github.com/spf13/cobra"
 )
@@ -35,4 +36,5 @@ func Execute() {
 func init() {
 	rootCmd.AddCommand(install.Cmd)
 	rootCmd.AddCommand(db.Cmd)
+	rootCmd.AddCommand(reinstall.Cmd)
 }

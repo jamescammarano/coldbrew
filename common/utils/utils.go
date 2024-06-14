@@ -1,10 +1,11 @@
-package common
+package utils
 
 import (
 	"errors"
 	"math/rand"
 	"strconv"
 
+	"coldbrew.go/cb/common/types"
 	"github.com/sirupsen/logrus"
 	"github.com/spaceweasel/promptui"
 )
@@ -53,7 +54,7 @@ func PromptInput(label string) string {
 	return res
 }
 
-func GenerateVariables(variables map[string]Variable) map[string]string {
+func GenerateVariables(variables map[string]types.Variable) map[string]string {
 	generated := map[string]string{}
 
 	for attr, val := range variables {
