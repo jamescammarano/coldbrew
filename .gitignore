@@ -1,6 +1,6 @@
-InstallDir
-test
-.DS_Store
-coverage.txt
-cb.example.yml
-backup.traefik.yml
+**/InstallDir
+**/test
+**/.DS_Store
+**/coverage.txt
+**/cb.example.yml
+**/backup.traefik.yml
