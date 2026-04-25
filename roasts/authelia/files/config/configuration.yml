@@ -1,0 +1,104 @@
+---
+###############################################################################
+#                           Authelia Configuration                            #
+###############################################################################
+
+theme: dark
+default_2fa_method: "totp"
+identity_validation:
+  reset_password:
+    # TODO Don't sub this into the config
+    jwt_secret: "{{ JWTSecret }}"
+
+server:
+  address: 'tcp://127.0.0.1:9091/'
+  endpoints:
+    enable_pprof: false
+    enable_expvars: false
+  disable_healthcheck: false
+
+log:
+  level: debug
+  format: text
+  file_path: /config/authelia.log
+  keep_stdout: true
+
+totp:
+  disable: false
+  issuer: authelia.{{ Domain }}
+  algorithm: sha1
+  digits: 6
+  period: 30
+  skew: 1
+  secret_size: 32
+
+webauthn:
+  disable: true
+
+ntp:
+  address: "time.cloudflare.com:123"
+  version: 4
+  max_desync: 3s
+  disable_startup_check: false
+  disable_failure: false
+
+authentication_backend:
+  # maybe use more secure than a plain yml
+  file:
+    path: /config/users_database.yml
+    password:
+      disable: false
+      iterations: 1
+      salt_length: 16
+      parallelism: 8
+      memory: 1024
+  # TODO Allow PW reset
+  password_reset:
+    disable: false
+
+password_policy:
+  standard:
+    enabled: false
+    min_length: 8
+    max_length: 0
+    require_uppercase: true
+    require_lowercase: true
+    require_number: true
+    require_special: true
+  zxcvbn:
+    enabled: false
+
+access_control:
+  default_policy: two_factor
+
+session:
+  name: authelia_session
+  secret: "{{ SESSION_SECRET }}" # TODO Ensure this is securely managed don't var sub it
+  expiration: 1h
+  inactivity: 10m
+  remember_me: 1M
+  same_site: lax
+  cookies:
+    - domain: '{{ Domain }}'
+      authelia_url: 'https://authelia.{{ Domain }}'
+      default_redirection_url: 'https://www.{{ Domain }}'
+      name: 'authelia_session'
+      same_site: 'lax'
+      inactivity: '5m'
+      expiration: '1h'
+      remember_me: '1d'
+
+regulation:
+  max_retries: 300
+  find_time: 2m
+  ban_time: 3m
+
+# TODO Expand on this
+storage:
+  local:
+    path: /config/data.db
+
+notifier:
+# TODO Don't use this method. Only works for people with access to the filesystem
+  filesystem:
+    filename: /config/notifications.txt
